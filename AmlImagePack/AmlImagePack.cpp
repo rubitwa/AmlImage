@@ -975,7 +975,6 @@ __s32 CAmlImagePack::AmlImg_pack(const char *ConfigPath, const char *ImageDirect
         header.crc = this->calc_img_crc(fp_write, ITEM_ALGIN_SIZE);
         _fseeki64(fp_write, 0, SEEK_SET);
         if (fwrite(&header.crc, sizeof(header.crc), 1, fp_write) != 1) {
-        //libimagepack.dll: fwrite(&header.crc, 1, header.itemAlginSize, fp_write) != header.itemAlginSize
             MESSAGE_ERR("Write crc failed [%s]\n", strerror(errno)); //L1571
             goto fail;
         }
@@ -983,7 +982,11 @@ __s32 CAmlImagePack::AmlImg_pack(const char *ConfigPath, const char *ImageDirect
         MESSAGE("version:0x%x crc:0x%08x size:%lld bytes[%uMB]\n", header.version, header.crc, header.imageSz, (unsigned int)(header.imageSz >> 20));
         fclose(fp_write);
         free(block);
-        //sub_10006EB0();//free_filelist(this->mapItem);
+        if (this->mapItem) {
+            FileList_free(this->mapItem);
+            this->mapItemCount = 0;
+            this->mapItem = 0;
+        }
         return 0;
     }
     MESSAGE_ERR("Invalid pack version %d", version); //L1583
@@ -992,8 +995,8 @@ fail:
     free(block);
     if (this->mapItem) {
         FileList_free(this->mapItem);
+        this->mapItemCount = 0;
         this->mapItem = 0;
-		this->mapItemCount = 0;
     }
     return -1;
 }
